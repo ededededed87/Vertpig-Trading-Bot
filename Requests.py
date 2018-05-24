@@ -6,6 +6,8 @@ import hashlib
 api_readonly_public_key_file = 'C:\Code\Python\Vertpig Bot\Public Key.txt'
 api_readonly_private_key_file = 'C:\Code\Python\Vertpig Bot\Private Key.txt'
 
+
+
 def get_public_key():
     file = open(api_readonly_public_key_file)
     public_key = file.readline()
@@ -19,7 +21,48 @@ def get_private_key():
     private_key_as_bytes = bytes(private_key, 'utf-8')
     return private_key_as_bytes
 
-def perform_action(method,market):
+
+
+
+def get_balances():
+
+    url = "https://www.vertpig.com/api/v1.1/account/getbalances?apikey=" + get_public_key() + "&nonce=1"
+
+    signature = hmac.new(get_private_key(), bytes(url, 'utf-8'), hashlib.sha512).hexdigest()
+    header = {"apisign" : signature}
+        
+    res = requests.get(url, headers = header)
+    return json.loads(res.content)
+
+
+def get_btc_balance():
+
+    return get_balances().get("result")[4].get("Available")
+    
+def get_vtc_balance():
+    
+    return get_balances().get("result")[2].get("Available")
+
+
+market = "VTCBTC"
+buy_price = 0.0001
+sell_price = 4
+buy_quantity = get_btc_balance()
+sell_quantity = get_vtc_balance()
+
+
+
+
+def perform_action(method, buy_or_sell = "buy"):
+
+    parameters = {"market" : market, "apikey" : get_public_key(), "nonce" : 1}
+
+                
+    rate = buy_price if (buy_or_sell == "buy") else sell_price
+    quantity = buy_quantity if (buy_or_sell == "buy") else sell_quantity
+    parameters = {"market" : market, "rate" : rate, "quantity" : quantity, "apikey" : get_public_key(), "nonce" : 1}
+
+
 
     public_methods = {"getticker", "getorderbook"}
     account_methods = {"getbalances"}
@@ -27,7 +70,7 @@ def perform_action(method,market):
 
     method_type = ""
 
-    parameters = {"market" : market, "apikey" : get_public_key(), "nonce" : 1}
+    
 
     if method in public_methods:
         method_type = "public/"
@@ -46,10 +89,9 @@ def perform_action(method,market):
         if str(i) != "nonce":
             url += "&"
         
-
     signature = hmac.new(get_private_key(), bytes(url, 'utf-8'), hashlib.sha512).hexdigest()
-
     header = {"apisign" : signature}
+
 
     res = requests.get(url, headers = header)
 
@@ -58,10 +100,32 @@ def perform_action(method,market):
 
 
 
-    print(response_contents)
+    return(response_contents)
+    print(len(response_contents.get("result")) == 0)
 
 
-perform_action("getbalances","VTCEUR")
 
+
+def has_open_orders():
+    return len(perform_action("getopenorders").get("result")) != 0
+
+def submit_buy_order():
+    perform_action("buylimit","buy")
+
+def submit_sell_order():
+    perform_action("selllimit","sell")
+
+
+if not has_open_orders():
+    if get_btc_balance() != "0.00000000":
+        submit_buy_order()
+        print("Buy submitted")
+    elif get_vtc_balance != "0.00000000":
+        submit_sell_order()
+        print("Sell submitted")
+    else:
+        print("no order submitted")
+else:
+    print("Order already on book")
 
 

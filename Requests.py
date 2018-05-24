@@ -3,6 +3,9 @@ import json
 import hmac
 import hashlib
 
+import email
+import smtplib
+
 api_readonly_public_key_file = 'C:\Code\Python\Vertpig Bot\Public Key.txt'
 api_readonly_private_key_file = 'C:\Code\Python\Vertpig Bot\Private Key.txt'
 
@@ -115,17 +118,37 @@ def submit_buy_order():
 def submit_sell_order():
     perform_action("selllimit","sell")
 
+def send_email():
+    msg = email.message_from_string('warning')
+    msg['From'] = email_address
+    msg['To'] = email_address
+    msg['Subject'] = "Vertpig Update"
+
+    s = smtplib.SMTP("smtp.live.com",587)
+    s.ehlo() # Hostname to send for this command defaults to the fully qualified domain name of the local host.
+    s.starttls() #Puts connection to SMTP server in TLS mode
+    s.ehlo()
+    s.login(email_address, password)
+
+    s.sendmail(email_address, email_address, msg.as_string())
+
+    s.quit()
+    
+
 
 if not has_open_orders():
     if get_btc_balance() != "0.00000000":
         submit_buy_order()
+        send_email()
         print("Buy submitted")
     elif get_vtc_balance != "0.00000000":
         submit_sell_order()
+        send_email()
         print("Sell submitted")
     else:
         print("no order submitted")
 else:
+    send_email()
     print("Order already on book")
 
 

@@ -45,8 +45,8 @@ def get_vtc_balance():
 
 
 market = "VTCBTC"
-buy_price = 0.0001
-sell_price = 4
+buy_price = 0.000235
+sell_price = 0.000245
 buy_quantity = get_btc_balance()
 sell_quantity = get_vtc_balance()
 

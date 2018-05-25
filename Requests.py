@@ -2,12 +2,16 @@ import requests
 import json
 import hmac
 import hashlib
-
 import email
 import smtplib
+import base64
 
 api_readonly_public_key_file = 'C:\Code\Python\Vertpig Bot\Public Key.txt'
 api_readonly_private_key_file = 'C:\Code\Python\Vertpig Bot\Private Key.txt'
+
+
+
+
 
 
 
@@ -48,8 +52,8 @@ def get_vtc_balance():
 
 
 market = "VTCBTC"
-buy_price = 0.000235
-sell_price = 0.000245
+buy_price = 0.000236
+sell_price = 0.000242
 buy_quantity = get_btc_balance()
 sell_quantity = get_vtc_balance()
 
@@ -57,7 +61,6 @@ sell_quantity = get_vtc_balance()
 
 
 def perform_action(method, buy_or_sell = "buy"):
-
     parameters = {"market" : market, "apikey" : get_public_key(), "nonce" : 1}
 
                 
@@ -118,8 +121,8 @@ def submit_buy_order():
 def submit_sell_order():
     perform_action("selllimit","sell")
 
-def send_email():
-    msg = email.message_from_string('warning')
+def send_email(message):
+    msg = email.message_from_string(message)
     msg['From'] = email_address
     msg['To'] = email_address
     msg['Subject'] = "Vertpig Update"
@@ -139,16 +142,18 @@ def send_email():
 if not has_open_orders():
     if get_btc_balance() != "0.00000000":
         submit_buy_order()
-        send_email()
+        send_email("Buy order has been placed.\n" +
+                   "Price: " +  str(buy_price) + "\n" +
+                   "VTC Quantity: " + str(buy_quantity))
         print("Buy submitted")
     elif get_vtc_balance != "0.00000000":
         submit_sell_order()
-        send_email()
+        send_email("Sell order has been placed.\n" +
+                   "Price: " +  str(sell_price) + "\n"
+                   "VTC  Quantity: " + str(sell_quantity))
         print("Sell submitted")
     else:
         print("no order submitted")
 else:
-    send_email()
-    print("Order already on book")
-
+        print("Order already on book")
 

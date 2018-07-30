@@ -10,8 +10,14 @@ import base64
 bittrex_public_api_file = r'C:\Code\Python\Vertpig Bot\BittrexPublicKey.txt'
 bittrex_private_api_file = r'C:\Code\Python\Vertpig Bot\BittrexPrivateKey.txt'
 
-vertpig_public_api_file ='C:\Code\Python\Vertpig Bot\VertpigPublicKey.txt'
+vertpig_public_api_file = 'C:\Code\Python\Vertpig Bot\VertpigPublicKey.txt'
 vertpig_private_api_file = 'C:\Code\Python\Vertpig Bot\VertpigPrivateKey.txt'
+
+bittrex = "bittrex"
+vertpig = "vertpig"
+buy = "buy"
+sell = "sell"
+
 
 def get_public_key(exchange):
     api_file = bittrex_public_api_file if (exchange == "bittrex") else vertpig_public_api_file
@@ -19,6 +25,7 @@ def get_public_key(exchange):
     public_key = file.readline()
     file.close()
     return public_key
+
 
 def get_private_key(exchange):
     api_file = bittrex_private_api_file if (exchange == "bittrex") else vertpig_private_api_file
@@ -39,17 +46,18 @@ def get_balances(exchange):
     res = requests.get(url, headers=header)
     return json.loads(res.content).get("result")
 
+
 def get_vtc_balance(exchange):
     for i in get_balances(exchange):
         if i.get("Currency") == "VTC":
             return i.get("Available")
+
 
 def get_btc_balance(exchange):
     for i in get_balances(exchange):
         if i.get("Currency") == "BTC":
             return i.get("Available")
 
-print (get_vtc_balance("vertpig"))
 
 def get_vertpig_price():
     url = "https://vertpig.com/api/v1.1/public/getticker?market=BTC-VTC"
@@ -74,6 +82,7 @@ def get_high_exchange():
     else:
         return "bittrex"
 
+
 def get_percentage_difference(vertpig_price, bittrex_price):
     low = min(vertpig_price, bittrex_price)
     high = max(vertpig_price, bittrex_price)
@@ -81,15 +90,37 @@ def get_percentage_difference(vertpig_price, bittrex_price):
     return round(percentage_difference,2)
 
 
+def trade(exchange, buy_or_sell):
+    method = "buymarket" if buy_or_sell == "buy" else "sellmarket"
+    market = "BTC-VTC"
+    amount = get_vtc_balance(exchange) if method == "sellmartket" else get_btc_balance(exchange)
+    url = "https://www." + exchange + ".com/api/v1.1/account/" + method + "?apikey=" + get_public_key(exchange) +\
+          "&nonce=1&market=" + market + "&amount=" + amount
+    signature = hmac.new(get_private_key(exchange), bytes(url, 'utf-8'), hashlib.sha512).hexdigest()
+    header = {"apisign": signature}
+
+    res = requests.get(url, headers=header)
+    return json.loads(res.content).get("result")
+
+
 print("The price on Vertpig is " + str(get_vertpig_price()))
 print("The price on Bittrex is " + str(get_bittrex_price()))
-print("The price on " + get_high_exchange() + " is " + str(get_percentage_difference(get_vertpig_price(), get_bittrex_price())) + "% higher than the price on " + get_low_exchange())
+print("The price on " + get_high_exchange() + " is " +
+      str(get_percentage_difference(get_vertpig_price(), get_bittrex_price())) +
+      "% higher than the price on " + get_low_exchange())
 
-if get_percentage_difference(get_vertpig_price(),get_bittrex_price()) > 0.5:
-    if get_high_exchange() == "bittrex" and get_vtc_balance("bittrex") != 0 and get_btc_balance("vertpig") != "0.00000000":
+if get_percentage_difference(get_vertpig_price(), get_bittrex_price()) > 1:
+    if get_high_exchange() == "bittrex" and get_vtc_balance("bittrex") != 0 \
+            and get_btc_balance("vertpig") != "0.00000000":
+        trade(bittrex, sell)
+        trade(vertpig, buy)
         print("I will sell on bittrex and buy on Vertpig")
-    elif get_high_exchange() == "vertpig" and get_vtc_balance("vertpig") != "0.00000000" and get_btc_balance("bittrex") != 0:
+    elif get_high_exchange() == "vertpig" and get_vtc_balance("vertpig") != "0.00000000" \
+            and get_btc_balance("bittrex") != 0:
+        trade(bittrex, buy)
+        trade(vertpig, sell)
         print("I will sell on Vertpig and buy on Bittrex")
-    else: print("I will not make a trade")
+    else:
+        print("I will not make a trade")
 else:
     print("I will not make a trade")

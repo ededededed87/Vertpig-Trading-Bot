@@ -6,7 +6,6 @@ import email
 import smtplib
 import base64
 
-
 bittrex_public_api_file = r'C:\Code\Python\Vertpig Bot\BittrexPublicKey.txt'
 bittrex_private_api_file = r'C:\Code\Python\Vertpig Bot\BittrexPrivateKey.txt'
 
@@ -37,8 +36,8 @@ def get_private_key(exchange):
 
 
 def get_balances(exchange):
-
-    url = "https://www." + exchange + ".com/api/v1.1/account/getbalances?apikey=" + get_public_key(exchange) + "&nonce=1"
+    url = "https://www." + exchange + ".com/api/v1.1/account/getbalances?apikey=" + get_public_key(
+        exchange) + "&nonce=1"
 
     signature = hmac.new(get_private_key(exchange), bytes(url, 'utf-8'), hashlib.sha512).hexdigest()
     header = {"apisign": signature}
@@ -70,14 +69,16 @@ def get_bittrex_price():
     response = json.loads(requests.get(url).content)
     return float(response.get("result").get("Last"))
 
+
 def get_low_exchange():
-    if  min(get_vertpig_price(), get_bittrex_price()) == get_vertpig_price():
+    if min(get_vertpig_price(), get_bittrex_price()) == get_vertpig_price():
         return "vertpig"
     else:
         return "bittrex"
 
+
 def get_high_exchange():
-    if  max(get_vertpig_price(), get_bittrex_price()) == get_vertpig_price():
+    if max(get_vertpig_price(), get_bittrex_price()) == get_vertpig_price():
         return "vertpig"
     else:
         return "bittrex"
@@ -87,15 +88,16 @@ def get_percentage_difference(vertpig_price, bittrex_price):
     low = min(vertpig_price, bittrex_price)
     high = max(vertpig_price, bittrex_price)
     percentage_difference = ((high - low) / low) * 100
-    return round(percentage_difference,2)
+    return round(percentage_difference, 2)
+
 
 
 def trade(exchange, buy_or_sell):
     method = "buymarket" if buy_or_sell == "buy" else "sellmarket"
     market = "BTC-VTC"
     amount = get_vtc_balance(exchange) if method == "sellmartket" else get_btc_balance(exchange)
-    url = "https://www." + exchange + ".com/api/v1.1/account/" + method + "?apikey=" + get_public_key(exchange) +\
-          "&nonce=1&market=" + market + "&amount=" + amount
+    url = "https://www." + exchange + ".com/api/v1.1/account/" + method + "?apikey=" + get_public_key(exchange) + \
+          "&nonce=1&market=" + market + "&amount=" + str(amount)
     signature = hmac.new(get_private_key(exchange), bytes(url, 'utf-8'), hashlib.sha512).hexdigest()
     header = {"apisign": signature}
 
@@ -103,15 +105,25 @@ def trade(exchange, buy_or_sell):
     return json.loads(res.content).get("result")
 
 
+def get_total_value():
+    return (float(get_vtc_balance(vertpig)) + float(get_btc_balance(vertpig)) / float(get_vertpig_price())) + get_vtc_balance(bittrex) \
+           + (get_btc_balance(bittrex) / get_bittrex_price())
+
+
+print("Vertpig: " + get_vtc_balance(vertpig) + "VTC, " + get_btc_balance(vertpig) + "BTC")
+print("Bittrex: " + str(get_vtc_balance(bittrex)) + "VTC, " + str(get_btc_balance(bittrex)) + "BTC")
+print("Estimated total is " + str(round(get_total_value(), 2)) + "VTC")
+print()
 print("The price on Vertpig is " + str(get_vertpig_price()))
 print("The price on Bittrex is " + str(get_bittrex_price()))
 print("The price on " + get_high_exchange() + " is " +
       str(get_percentage_difference(get_vertpig_price(), get_bittrex_price())) +
       "% higher than the price on " + get_low_exchange())
+print()
 
-if get_percentage_difference(get_vertpig_price(), get_bittrex_price()) > 1:
+if get_percentage_difference(get_vertpig_price(), get_bittrex_price()) > 1.25:
     if get_high_exchange() == "bittrex" and get_vtc_balance("bittrex") != 0 \
-            and get_btc_balance("vertpig") != "0.00000000":
+            and get_high_exchange() == "bittrex" != "0.00000000":
         trade(bittrex, sell)
         trade(vertpig, buy)
         print("I will sell on bittrex and buy on Vertpig")

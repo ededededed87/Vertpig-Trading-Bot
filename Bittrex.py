@@ -10,11 +10,11 @@ original_vtc_balance = 5
 original_btc_balance = 0.0008183
 
 
-bittrex_public_api_file = r'C:\Users\edwar\Documents\Coding\Python\Vertpig-Trading-Bot\BittrexPublicKey.txt'
-bittrex_private_api_file = r'C:\Users\edwar\Documents\Coding\Python\Vertpig-Trading-Bot\BittrexPrivateKey.txt'
+bittrex_public_api_file = r'C:\Code\Python\Vertpig Bot\BittrexPublicKey.txt'
+bittrex_private_api_file = r'C:\Code\Python\Vertpig Bot\BittrexPrivateKey.txt'
 
-vertpig_public_api_file = r'C:\Users\edwar\Documents\Coding\Python\Vertpig-Trading-Bot\VertpigPublicKey.txt'
-vertpig_private_api_file = r'C:\Users\edwar\Documents\Coding\Python\Vertpig-Trading-Bot\VertpigPrivateKey.txt'
+vertpig_public_api_file = r'C:\Code\Python\Vertpig Bot\VertpigPublicKey.txt'
+vertpig_private_api_file = r'C:\Code\Python\Vertpig Bot\VertpigPrivateKey.txt'
 
 bittrex = "bittrex"
 vertpig = "vertpig"
@@ -136,6 +136,7 @@ def get_total_value():
 print("Vertpig: " + get_vtc_balance(vertpig) + "VTC, " + get_btc_balance(vertpig) + "BTC")
 print("Bittrex: " + str(get_vtc_balance(bittrex)) + "VTC, " + str(get_btc_balance(bittrex)) + "BTC")
 print("Estimated total is " + str(round(get_total_value(), 2)) + "VTC")
+
 print()
 print("The price on Vertpig is " + str(get_vertpig_price()))
 print("The price on Bittrex is " + str(get_bittrex_price()))

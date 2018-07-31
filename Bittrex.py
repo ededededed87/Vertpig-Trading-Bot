@@ -59,26 +59,34 @@ def get_btc_balance(exchange):
 
 
 def get_vertpig_price():
+    price_type = "Bid" if get_high_exchange() == "vertpig" else "Ask"
     url = "https://vertpig.com/api/v1.1/public/getticker?market=BTC-VTC"
     response = json.loads(requests.get(url).content)
-    return float(response.get("result").get("Last"))
+    return float(response.get("result").get(price_type))
 
 
 def get_bittrex_price():
+    price_type = "Bid" if get_high_exchange() == "bittrex" else "Ask"
     url = "https://bittrex.com/api/v1.1/public/getticker?market=BTC-VTC"
+    response = json.loads(requests.get(url).content)
+    return float(response.get("result").get(price_type))
+
+
+def get_last_price(exchange):
+    url = "https://" + exchange + ".com/api/v1.1/public/getticker?market=BTC-VTC"
     response = json.loads(requests.get(url).content)
     return float(response.get("result").get("Last"))
 
 
 def get_low_exchange():
-    if min(get_vertpig_price(), get_bittrex_price()) == get_vertpig_price():
+    if min(get_last_price(vertpig), get_last_price(bittrex)) == get_last_price(vertpig):
         return "vertpig"
     else:
         return "bittrex"
 
 
 def get_high_exchange():
-    if max(get_vertpig_price(), get_bittrex_price()) == get_vertpig_price():
+    if max(get_last_price(vertpig), get_last_price(bittrex)) == get_last_price(vertpig):
         return "vertpig"
     else:
         return "bittrex"
@@ -91,18 +99,29 @@ def get_percentage_difference(vertpig_price, bittrex_price):
     return round(percentage_difference, 2)
 
 
-
 def trade(exchange, buy_or_sell):
-    method = "buymarket" if buy_or_sell == "buy" else "sellmarket"
+    if exchange == vertpig:
+        method = "buymarket" if buy_or_sell == "buy" else "sellmarket"
+    else:
+        method = "buylimit" if buy_or_sell == buy else "selllimit"
+        quantity = get_btc_balance(bittrex) if buy_or_sell == buy else get_vtc_balance(bittrex)
+        rate = get_bittrex_price() + 1 if buy_or_sell == buy else get_bittrex_price() - 1
+
     market = "BTC-VTC"
-    amount = get_vtc_balance(exchange) if method == "sellmartket" else get_btc_balance(exchange)
-    url = "https://www." + exchange + ".com/api/v1.1/account/" + method + "?apikey=" + get_public_key(exchange) + \
-          "&nonce=1&market=" + market + "&amount=" + str(amount)
+    amount = get_vtc_balance(exchange) if method == "sellmarket" else get_btc_balance(exchange)
+    url = "https://www." + exchange + ".com/api/v1.1/market/" + method + "?apikey=" + get_public_key(exchange) + \
+          "&nonce=1&market=" + market
+
+    if exchange == vertpig:
+        url += "&amount=" + str(amount)
+    else:
+        url += "&quantity=" + str(quantity) + "&rate=" + str(rate)
+
     signature = hmac.new(get_private_key(exchange), bytes(url, 'utf-8'), hashlib.sha512).hexdigest()
     header = {"apisign": signature}
-
-    res = requests.get(url, headers=header)
-    return json.loads(res.content).get("result")
+    print(url)
+    requests.get(url, headers=header)
+    # return json.loads(res.content).get("result")
 
 
 def get_total_value():
@@ -122,13 +141,12 @@ print("The price on " + get_high_exchange() + " is " +
 print()
 
 if get_percentage_difference(get_vertpig_price(), get_bittrex_price()) > 1.25:
-    if get_high_exchange() == "bittrex" and get_vtc_balance("bittrex") != 0 \
-            and get_high_exchange() == "bittrex" != "0.00000000":
+    if get_high_exchange() == "bittrex" and get_vtc_balance("bittrex") > 0.00000002 and float(get_btc_balance(vertpig)) > 0.00000002:
         trade(bittrex, sell)
         trade(vertpig, buy)
         print("I will sell on bittrex and buy on Vertpig")
-    elif get_high_exchange() == "vertpig" and get_vtc_balance("vertpig") != "0.00000000" \
-            and get_btc_balance("bittrex") != 0:
+    elif get_high_exchange() == "vertpig" and float(get_vtc_balance("vertpig")) > 0.00000002 \
+            and get_btc_balance("bittrex") > 1e-07:
         trade(bittrex, buy)
         trade(vertpig, sell)
         print("I will sell on Vertpig and buy on Bittrex")

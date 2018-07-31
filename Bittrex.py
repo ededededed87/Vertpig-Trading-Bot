@@ -6,11 +6,15 @@ import email
 import smtplib
 import base64
 
-bittrex_public_api_file = r'C:\Code\Python\Vertpig Bot\BittrexPublicKey.txt'
-bittrex_private_api_file = r'C:\Code\Python\Vertpig Bot\BittrexPrivateKey.txt'
+original_vtc_balance = 5
+original_btc_balance = 0.0008183
 
-vertpig_public_api_file = 'C:\Code\Python\Vertpig Bot\VertpigPublicKey.txt'
-vertpig_private_api_file = 'C:\Code\Python\Vertpig Bot\VertpigPrivateKey.txt'
+
+bittrex_public_api_file = r'C:\Users\edwar\Documents\Coding\Python\Vertpig-Trading-Bot\BittrexPublicKey.txt'
+bittrex_private_api_file = r'C:\Users\edwar\Documents\Coding\Python\Vertpig-Trading-Bot\BittrexPrivateKey.txt'
+
+vertpig_public_api_file = r'C:\Users\edwar\Documents\Coding\Python\Vertpig-Trading-Bot\VertpigPublicKey.txt'
+vertpig_private_api_file = r'C:\Users\edwar\Documents\Coding\Python\Vertpig-Trading-Bot\VertpigPrivateKey.txt'
 
 bittrex = "bittrex"
 vertpig = "vertpig"

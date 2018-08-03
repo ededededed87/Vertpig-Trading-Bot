@@ -10,6 +10,7 @@ original_vtc_balance = 5
 original_btc_balance = 0.0008183
 
 
+
 bittrex_public_api_file = r'C:\Code\Python\Vertpig Bot\BittrexPublicKey.txt'
 bittrex_private_api_file = r'C:\Code\Python\Vertpig Bot\BittrexPrivateKey.txt'
 
@@ -109,7 +110,7 @@ def trade(exchange, buy_or_sell):
     else:
         method = "buylimit" if buy_or_sell == buy else "selllimit"
         quantity = get_btc_balance(bittrex) if buy_or_sell == buy else get_vtc_balance(bittrex)
-        rate = get_bittrex_price() + 1 if buy_or_sell == buy else get_bittrex_price() - 1
+        rate = get_bittrex_price() if buy_or_sell == buy else get_bittrex_price()
 
     market = "BTC-VTC"
     amount = get_vtc_balance(exchange) if method == "sellmarket" else get_btc_balance(exchange)
@@ -125,13 +126,28 @@ def trade(exchange, buy_or_sell):
     header = {"apisign": signature}
     print(url)
     requests.get(url, headers=header)
-    # return json.loads(res.content).get("result")
 
 
 def get_total_value():
     return (float(get_vtc_balance(vertpig)) + float(get_btc_balance(vertpig)) / float(get_vertpig_price())) + get_vtc_balance(bittrex) \
            + (get_btc_balance(bittrex) / get_bittrex_price())
 
+
+def send_email(message):
+    msg = email.message_from_string(message)
+    msg['From'] = email_address
+    msg['To'] = email_address
+    msg['Subject'] = message
+
+    s = smtplib.SMTP("smtp.live.com",587)
+    s.ehlo() # Hostname to send for this command defaults to the fully qualified domain name of the local host.
+    s.starttls() #Puts connection to SMTP server in TLS mode
+    s.ehlo()
+    s.login(email_address, password)
+
+    s.sendmail(email_address, email_address, "")
+
+    s.quit()
 
 print("Vertpig: " + get_vtc_balance(vertpig) + "VTC, " + get_btc_balance(vertpig) + "BTC")
 print("Bittrex: " + str(get_vtc_balance(bittrex)) + "VTC, " + str(get_btc_balance(bittrex)) + "BTC")
@@ -140,20 +156,20 @@ print("Estimated total is " + str(round(get_total_value(), 2)) + "VTC")
 print()
 print("The price on Vertpig is " + str(get_vertpig_price()))
 print("The price on Bittrex is " + str(get_bittrex_price()))
-print("The price on " + get_high_exchange() + " is " +
-      str(get_percentage_difference(get_vertpig_price(), get_bittrex_price())) +
-      "% higher than the price on " + get_low_exchange())
+print("Percentage: " + str(get_percentage_difference(get_vertpig_price(), get_bittrex_price())) + "%")
 print()
 
 if get_percentage_difference(get_vertpig_price(), get_bittrex_price()) > 1.25:
-    if get_high_exchange() == "bittrex" and get_vtc_balance("bittrex") > 0.00000002 and float(get_btc_balance(vertpig)) > 0.00000002:
+    if get_bittrex_price() > get_vertpig_price() and get_vtc_balance("bittrex") > 0.00000002 and float(get_btc_balance(vertpig)) > 0.00000002:
         trade(bittrex, sell)
         trade(vertpig, buy)
+        send_email("Bittrex Sell, Vertpig Buy. Total: " + str(round(get_total_value(), 2)) + "VTC")
         print("I will sell on bittrex and buy on Vertpig")
-    elif get_high_exchange() == "vertpig" and float(get_vtc_balance("vertpig")) > 0.00000002 \
+    elif get_bittrex_price() < get_vertpig_price() and float(get_vtc_balance("vertpig")) > 0.00000002 \
             and get_btc_balance("bittrex") > 1e-07:
         trade(bittrex, buy)
         trade(vertpig, sell)
+        send_email("Vertpig Sell, Bittrex Buy. Total: " + str(round(get_total_value(), 2)) + "VTC")
         print("I will sell on Vertpig and buy on Bittrex")
     else:
         print("I will not make a trade")
